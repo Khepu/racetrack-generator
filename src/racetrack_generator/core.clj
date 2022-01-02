@@ -2,47 +2,42 @@
   (:require [quil.core :as q]
             [quil.middleware :as m]))
 
-(defn setup []
-  ; Set frame rate to 30 frames per second.
+(defn setup
+  []
   (q/frame-rate 30)
-  ; Set color mode to HSB (HSV) instead of default RGB.
-  (q/color-mode :hsb)
-  ; setup function returns initial state. It contains
-  ; circle color and position.
-  {:color 0
-   :angle 0})
+  (q/color-mode :rgb)
+  {})
 
-(defn update-state [state]
-  ; Update sketch state by changing circle color and position.
-  {:color (mod (+ (:color state) 0.7) 255)
-   :angle (+ (:angle state) 0.1)})
+(defn plot
+  [f start end step]
+  (map-indexed #(vector %1 (f %2)) (range start end step)))
 
-(defn draw-state [state]
-  ; Clear the sketch by filling it with light-grey color.
+(defn update-state
+  [state]
+  {})
+
+(defn draw-state
+  [state]
   (q/background 240)
-  ; Set circle color.
-  (q/fill (:color state) 255 255)
-  ; Calculate x and y coordinates of the circle.
-  (let [angle (:angle state)
-        x (* 150 (q/cos angle))
-        y (* 150 (q/sin angle))]
-    ; Move origin point to the center of the sketch.
-    (q/with-translation [(/ (q/width) 2)
-                         (/ (q/height) 2)]
-      ; Draw the circle.
-      (q/ellipse x y 100 100))))
-
+  (q/fill 0 0 0)
+  (let [points (plot inc 0 500 20)
+        pairs (reduce (fn [lines pair]
+                        (if (and (<= 1 (count lines)) (= 2 (count pair)))
+                          (let [last-line (last lines)
+                                mid-pair [(second last-line) (first pair)]]
+                            (conj lines mid-pair (vec pair)))
+                          (conj lines (vec pair))))
+                      []
+                      (partition 2 points))]
+    (run! (fn [[[x1 y1] [x2 y2]]] (q/line x1 y1 x2 y2)) pairs)))
 
 (q/defsketch racetrack-generator
-  :title "You spin my circle right round"
+  :title "Racetrack Generator"
   :size [500 500]
-  ; setup function called only once, during sketch initialization.
   :setup setup
-  ; update-state is called on each iteration before draw-state.
   :update update-state
   :draw draw-state
   :features [:keep-on-top]
-  ; This sketch uses functional-mode middleware.
-  ; Check quil wiki for more info about middlewares and particularly
-  ; fun-mode.
   :middleware [m/fun-mode])
+
+(defn -main [& args])
